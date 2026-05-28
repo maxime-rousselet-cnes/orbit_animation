@@ -411,7 +411,6 @@ class EarthAndSatelliteSceneGammaAnimated(ThreeDScene):
     and the observation table is a plain dict built before animation starts.
     """
 
-    # --- tuneable class-level parameters ---
     earth_resolution: int = 100
     earth_radius: float = 2.2
     earth_rotation_period: float = 150.0  # (s).
