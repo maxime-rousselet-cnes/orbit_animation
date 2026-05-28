@@ -415,9 +415,9 @@ class EarthAndSatelliteSceneGammaAnimated(ThreeDScene):
     earth_radius: float = 2.2
     earth_rotation_period: float = 150.0  # (s).
     orbit_period: float = 40  # (s).
-    semi_major_axis_factor: float = 1.25
-    eccentricity: float = 0.3
-    inclination: float = 30.0 * DEGREES
+    semi_major_axis_factor: float = (6371 + 1500) / 6371
+    eccentricity: float = 0.0
+    inclination: float = 50.0 * DEGREES
     initial_raan: float = 0.0 * DEGREES
     j_2: float = -0.1  # Exaggerated for visual effect, not realistic!
     n_stations: int = 10
@@ -504,7 +504,7 @@ class EarthAndSatelliteSceneGammaAnimated(ThreeDScene):
         # Camera & light.
         frame = self.camera.frame
         frame.set_euler_angles(theta=-45 * DEGREES, phi=60 * DEGREES)
-        self.camera.frame.shift(1.5 * RIGHT + IN)
+        # self.camera.frame.shift(1.5 * RIGHT + IN)
 
         light = self.camera.light_source
         light.move_to(23.5 * RIGHT + 10 * OUT)
@@ -528,7 +528,7 @@ class EarthAndSatelliteSceneGammaAnimated(ThreeDScene):
             v = j2_tracker.get_value()
             m.set_value(v)
 
-            if v >= 0:
+            if v >= 0 and self.delta_j_2_1 != 0:
 
                 m.set_color(interpolate_color(WHITE, RED, v / self.delta_j_2_1))
 
