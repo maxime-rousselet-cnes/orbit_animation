@@ -4,7 +4,7 @@ Observation ranges are visualized from randomly generated stations.
 """
 
 from manimlib import *
-from numpy import cos, sin, pi, asin, array, ndarray, linspace, dot, zeros_like, ones_like, clip
+from numpy import array, asin, clip, cos, dot, linspace, ndarray, ones_like, pi, sin, zeros_like
 from numpy.linalg import norm
 from numpy.random import random
 from PIL.Image import open
@@ -393,7 +393,7 @@ def generate_stations(
     return station_dynamic_coordinates
 
 
-class EarthAndSatelliteSceneJ2Animated(ThreeDScene):
+class EarthAndSatelliteSceneGammaAnimated(ThreeDScene):
     """
     3D scene: textured rotating Earth, inclined satellite orbit, persistent trace,
     and periodic ground-station observation links.
@@ -416,11 +416,11 @@ class EarthAndSatelliteSceneJ2Animated(ThreeDScene):
     earth_radius: float = 2.2
     earth_rotation_period: float = 150.0  # (s).
     orbit_period: float = 40  # (s).
-    semi_major_axis_factor: float = 1.5
+    semi_major_axis_factor: float = 1.25
     eccentricity: float = 0.3
     inclination: float = 30.0 * DEGREES
     initial_raan: float = 0.0 * DEGREES
-    j_2: float = -0.5  # Exaggerated for visual effect, not realistic!
+    j_2: float = -0.1  # Exaggerated for visual effect, not realistic!
     n_stations: int = 10
     frame_rate: int = 25  # fps.
     animation_duration: float = 80.0  # (s).
@@ -506,7 +506,6 @@ class EarthAndSatelliteSceneJ2Animated(ThreeDScene):
         frame = self.camera.frame
         frame.set_euler_angles(theta=-45 * DEGREES, phi=60 * DEGREES)
         self.camera.frame.shift(1.5 * RIGHT + IN)
-        self.background_color = BLACK
 
         light = self.camera.light_source
         light.move_to(23.5 * RIGHT + 10 * OUT)
@@ -519,7 +518,7 @@ class EarthAndSatelliteSceneJ2Animated(ThreeDScene):
 
         # Delta J_2 tracker.
         j2_tracker = ValueTracker(self.delta_j_2)
-        tex = Tex(r"\Delta J_2 =", f"{self.delta_j_2:.3f}")
+        tex = Tex(r"\Delta \gamma_i =", f"{self.delta_j_2:.3f}")
         j2_value = tex.make_number_changeable(f"{self.delta_j_2:.3f}")
         tex.to_edge(RIGHT)
         tex.fix_in_frame()
