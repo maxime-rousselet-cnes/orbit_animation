@@ -432,8 +432,8 @@ class EarthAndSatelliteSceneGammaAnimated(ThreeDScene):
     n_1_j2 = 5.0  # Ramps and holds.
 
     delta_j_2 = 0.0
-    delta_j_2_1 = 0.05
-    delta_j_2_2 = -0.05
+    delta_j_2_1 = 0.0
+    delta_j_2_2 = -0.0
 
     def build_orbit_and_stations(
         self,
@@ -519,18 +519,22 @@ class EarthAndSatelliteSceneGammaAnimated(ThreeDScene):
         j2_tracker = ValueTracker(self.delta_j_2)
         tex = Tex(r"\Delta \gamma_i =", f"{self.delta_j_2:.3f}")
         j2_value = tex.make_number_changeable(f"{self.delta_j_2:.3f}")
+        """
         tex.to_edge(RIGHT)
         tex.fix_in_frame()
         self.add(tex)
+        """
 
         def update_j2_value(m):
 
             v = j2_tracker.get_value()
             m.set_value(v)
 
-            if v >= 0 and self.delta_j_2_1 != 0:
+            if v >= 0:
 
-                m.set_color(interpolate_color(WHITE, RED, v / self.delta_j_2_1))
+                if self.delta_j_2_1 != 0:
+
+                    m.set_color(interpolate_color(WHITE, RED, v / self.delta_j_2_1))
 
             else:
 
@@ -586,13 +590,14 @@ class EarthAndSatelliteSceneGammaAnimated(ThreeDScene):
             Satellite updater: index lookup into pre-computed positions.
             """
             idx = self.current_index(n_steps=n_steps, time_tracker=time_tracker)
-            m.move_to(
-                satellite_positions[idx]
+            m.move_to(satellite_positions[idx])
+            """
                 + orbit_model.orbit_partials.partial_satellite_state_inertial_over_partial_j_2[
                     idx, :, 0
                 ]
                 * j2_tracker.get_value()
             )
+            """
 
         sat.add_updater(update_satellite)
 
@@ -635,7 +640,7 @@ class EarthAndSatelliteSceneGammaAnimated(ThreeDScene):
         for station, station_positions in station_dynamic_coordinates.items():
 
             ln = Line(start=ORIGIN, end=station_positions[0, :, 0])
-            ln.set_stroke(GREEN, width=1.2, opacity=0.7)
+            ln.set_stroke(GREEN, width=5, opacity=0.7)
             self.add(ln)
             link_lines[station] = ln
 
