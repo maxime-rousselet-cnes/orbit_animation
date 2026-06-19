@@ -697,6 +697,173 @@ class EarthAndSatelliteSceneGammaAnimated(ThreeDScene):
         dot_group.add_updater(update_dots)
         self.add(dot_group)
 
+        # ---------------------------------------------------------------------
+        # Fixed-in-frame 2D plots of x(t), y(t), z(t)
+        # ---------------------------------------------------------------------
+
+        graph_width = 3.4
+        graph_height = 0.95
+        graph_gap = 0.25
+        right_buff = 0.25
+        top_buff = 0.45
+
+        t_min, t_max = times[0], times[-1]
+
+        # Use one common vertical scale so x, y, z are comparable.
+        y_lim = 1.10 * max(abs(satellite_positions).max(), 1e-6)
+        y_min, y_max = -y_lim, y_lim
+
+        right_edge = FRAME_X_RADIUS - right_buff
+        x_center = right_edge - graph_width / 2
+        top_edge = FRAME_Y_RADIUS - top_buff
+
+        total_graph_height = 3 * graph_height + 2 * graph_gap
+
+        plot_panel = VGroup()
+
+        background = Rectangle(
+            width=graph_width + 0.85,
+            height=total_graph_height + 0.55,
+        )
+        background.set_fill(BLACK, opacity=0.65)
+        background.set_stroke(WHITE, width=1, opacity=0.25)
+        background.move_to(x_center * RIGHT + (top_edge - total_graph_height / 2) * UP)
+        plot_panel.add(background)
+
+        def graph_point(t: float, value: float, center: np.ndarray) -> np.ndarray:
+            """
+            Convert a data point (time, component value) into fixed-frame
+            Manim coordinates.
+            """
+
+            alpha_t = (t - t_min) / (t_max - t_min)
+            alpha_y = (value - y_min) / (y_max - y_min)
+
+            return (
+                center + (alpha_t - 0.5) * graph_width * RIGHT + (alpha_y - 0.5) * graph_height * UP
+            )
+
+        component_specs = [
+            (r"x(t)", 0, RED),
+            (r"y(t)", 1, GREEN),
+            (r"z(t)", 2, BLUE),
+        ]
+
+        for row, (component_label, component_index, component_color) in enumerate(component_specs):
+
+            graph_center = (
+                x_center * RIGHT
+                + (top_edge - graph_height / 2 - row * (graph_height + graph_gap)) * UP
+            )
+
+            # Axes for this small graph.
+            x_axis = Line(
+                graph_point(t_min, 0.0, graph_center),
+                graph_point(t_max, 0.0, graph_center),
+            )
+            x_axis.set_stroke(GREY_B, width=1, opacity=0.8)
+
+            y_axis = Line(
+                graph_point(t_min, y_min, graph_center),
+                graph_point(t_min, y_max, graph_center),
+            )
+            y_axis.set_stroke(GREY_B, width=1, opacity=0.8)
+
+            # Full precomputed component curve.
+            curve = VMobject()
+            curve.set_stroke(component_color, width=2, opacity=0.9)
+            curve.set_points_as_corners(
+                [
+                    graph_point(t, value, graph_center)
+                    for t, value in zip(
+                        times,
+                        satellite_positions[:, component_index],
+                    )
+                ]
+            )
+
+            label = Tex(component_label)
+            label.set_color(component_color)
+            label.scale(0.4)
+            label.next_to(y_axis, LEFT, buff=0.12)
+
+            # Vertical time cursor.
+            cursor = Line(
+                graph_point(t_min, y_min, graph_center),
+                graph_point(t_min, y_max, graph_center),
+            )
+            cursor.set_stroke(WHITE, width=1, opacity=0.55)
+
+            def make_cursor_updater(center: np.ndarray):
+
+                def update_cursor(m: Line) -> None:
+
+                    idx = self.current_index(
+                        n_steps=n_steps,
+                        time_tracker=time_tracker,
+                    )
+                    t = times[idx]
+
+                    m.put_start_and_end_on(
+                        graph_point(t, y_min, center),
+                        graph_point(t, y_max, center),
+                    )
+
+                return update_cursor
+
+            cursor.add_updater(make_cursor_updater(graph_center))
+
+            # Dot showing the current value on each curve.
+            moving_dot = Dot(radius=0.035)
+            moving_dot.set_color(component_color)
+
+            def make_dot_updater(
+                component: int,
+                center: np.ndarray,
+            ):
+
+                def update_dot(m: Dot) -> None:
+
+                    idx = self.current_index(
+                        n_steps=n_steps,
+                        time_tracker=time_tracker,
+                    )
+
+                    m.move_to(
+                        graph_point(
+                            times[idx],
+                            satellite_positions[idx, component],
+                            center,
+                        )
+                    )
+
+                return update_dot
+
+            moving_dot.add_updater(
+                make_dot_updater(
+                    component=component_index,
+                    center=graph_center,
+                )
+            )
+
+            plot_panel.add(
+                x_axis,
+                y_axis,
+                curve,
+                cursor,
+                moving_dot,
+                label,
+            )
+
+        time_label = Tex(r"t")
+        time_label.scale(0.35)
+        time_label.next_to(background, DOWN, buff=0.08)
+        plot_panel.add(time_label)
+
+        # Critical in a ThreeDScene: keep this overlay attached to the screen.
+        plot_panel.fix_in_frame()
+        self.add(plot_panel)
+
         self.play(
             time_tracker.animate.set_value(self.animation_duration),
             run_time=self.animation_duration,
